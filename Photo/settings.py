@@ -143,3 +143,6 @@ CORS_ALLOW_METHODS = (
     "POST",
     "PUT",
 )
+
+
+AUTH_USER_MODEL = 'User.User'

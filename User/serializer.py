@@ -5,14 +5,20 @@ from .models import User
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    profile_photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['last_name', 'first_name', 'email', 'username', 'bio', 'profile_photo', 'password', 'password2']
+        fields = ['last_name', 'first_name', 'email', 'username', 'bio', 'profile_photo_url', 'password', 'password2']
         extra_kwargs = {
             'password': {'write_only': True},
             'username': {'read_only': True},
+
         }
+
+    def generate_filename(self, username, image_extension):
+        filename = f"{username.replace(':', '_').lower()}.{image_extension}"
+        return filename
 
     def save(self, *args, **kwargs):
         email = self.validated_data['email']
