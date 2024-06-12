@@ -125,6 +125,7 @@ class LoginView(APIView):
 
         return Response({'msg': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 class UserList(APIView):
     @swagger_auto_schema(
         operation_description="List Users",

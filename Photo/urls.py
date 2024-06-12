@@ -36,7 +36,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('User.urls)),
+    path('auth/', include('User.urls')),
     path('api/swagger', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
     path('api/redoc/', schema_view.with_ui('redoc'), name='schema-redoc'),
 ]
