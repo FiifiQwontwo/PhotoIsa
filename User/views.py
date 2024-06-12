@@ -1,3 +1,5 @@
+from django.shortcuts import get_object_or_404
+
 from .serializer import UserListSerializer, UserRegistrationSerializer
 from .models import User
 from rest_framework.views import APIView
@@ -6,6 +8,41 @@ from rest_framework import status
 from rest_framework.response import Response
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import send_mail
+from django.conf import settings
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+def send_verification_email(user):
+    token = user.email_verification_token
+    verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}/"
+    subject = 'Verify your email address'
+    message = f'Hi {user.username},\n\nPlease verify your email address by clicking on the following link: {verification_url}\n\nThank you!'
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [user.email]
+
+    send_mail(subject, message, from_email, recipient_list)
+
+
+class VerifyEmailView(APIView):
+    def get(self, request, token):
+        user = get_object_or_404(User, email_verification_token=token)
+        if user.is_active:
+            return Response({'msg': 'Email already verified'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.is_active = True
+        user.email_verification_token = None
+        user.save()
+        return Response({'msg': 'Email verified successfully'}, status=status.HTTP_200_OK)
 
 
 class RegistrationView(APIView):
@@ -33,7 +70,13 @@ class RegistrationView(APIView):
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+            send_verification_email(user)
+            tokens = get_tokens_for_user(user)
+            response_data = {
+                'user': serializer.data,
+                'tokens': tokens,
+            }
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -121,7 +164,8 @@ class LoginView(APIView):
 
         if user is not None:
             login(request, user)
-            return Response({'msg': 'Login Success'}, status=status.HTTP_200_OK)
+            tokens = get_tokens_for_user(user)
+            return Response({'msg': 'Login Success', 'tokens': tokens}, status=status.HTTP_200_OK)
 
         return Response({'msg': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 

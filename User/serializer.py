@@ -1,3 +1,4 @@
+from django.utils.crypto import get_random_string
 from rest_framework import serializers
 
 from .models import User
@@ -30,6 +31,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             last_name=self.validated_data['last_name'],
             profile_photo=self.validated_data.get('profile_photo', None),
             bio=self.validated_data.get('bio', ''),
+            is_active=False,
+            email_verification_token=get_random_string(length=32)
         )
 
         password = self.validated_data['password']
