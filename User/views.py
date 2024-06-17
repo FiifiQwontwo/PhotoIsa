@@ -1,5 +1,14 @@
-from django.shortcuts import get_object_or_404
-
+from django.contrib import messages, auth
+from django.contrib.auth import get_user_model, login, authenticate
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMessage
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from .forms import UserLoginForm, RegisterForm
 from .serializer import UserListSerializer, UserRegistrationSerializer
 from .models import User
 from rest_framework.views import APIView
@@ -12,6 +21,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 
 
 def get_tokens_for_user(user):
@@ -203,3 +213,21 @@ class UserList(APIView):
         user = User.objects.all()
         serializer = UserListSerializer(user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+## this section has no endpoint
+
+def activate(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        User = get_user_model()
+        user = User._default_manager.get(pk=uid)
+    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, "Congratulations! Your account is activated.")
+        # to continue tomorrow
+

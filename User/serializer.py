@@ -29,7 +29,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             username=username,
             first_name=self.validated_data['first_name'],
             last_name=self.validated_data['last_name'],
-            profile_photo=self.validated_data.get('profile_photo', None),
+            avatar=self.validated_data.get('avatar', None),
             bio=self.validated_data.get('bio', ''),
             is_active=False,
             email_verification_token=get_random_string(length=32)
@@ -46,9 +46,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserListSerializer(serializers.ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['last_name', 'first_name', 'email', 'username', 'bio', 'profile_photo', 'password', 'password2']
+        fields = ['last_name', 'first_name', 'email', 'username', 'bio', 'profile_photo_url', 'password', 'password2']
         extra_kwargs = {
             'password': {'write_only': True},
             'username': {'read_only': True},
